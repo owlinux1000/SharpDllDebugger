@@ -33,7 +33,7 @@ internal class ArgumentParser {
         this._description = description;
         this._options = new List<Option>();
         // TODO: OptionFlagクラスを作成したらヘルプ出力用のオプションをデフォルトで追加しておく
-        this.AddFlag("-h", "--help", "show this help message and exit");
+        this.AddFlag("-h", "--help", "Show this help message and exit");
     }
 
     private Option GetOptionFromName(string name) {
@@ -117,10 +117,6 @@ internal class ArgumentParser {
     }
 
     public ParsedArg ParseArgs(string[] args) {
-        if(args.Length == 0) {
-            Console.WriteLine(this.Help());
-            return null;
-        }
         ParsedArg pa = new ParsedArg();
         pa.Flags["-h"] = false;
         pa.Flags["--help"] = false;
@@ -133,16 +129,19 @@ internal class ArgumentParser {
         // 末尾から検査して、オプションではない値があったら保持しつづけて、
         // オプションがでたら、そのオプションの値だと解釈するなど
         foreach(var arg in args) {
-            Console.WriteLine(arg);
             if(arg.StartsWith("--") || arg.StartsWith("-")) {
 
                 if(isArgumentValues) {
+                    if(vargs.Count == 0) {
+                        Console.WriteLine($"{currentOptionName} requires arguments");
+                        Environment.Exit(0);
+                    }
                     pa.VArgs[currentOptionName] = vargs;
                     isArgumentValues = false;
+                    vargs = new List<string>();
                 }
                 // -- もしくは -から始まるオプションに該当する引数設定がなければnullを返す
-                currentOption = GetOptionFromName(arg);
-                
+                currentOption = GetOptionFromName(arg);                
                 currentOptionName = arg;
                 if(currentOption == null) {
                     Console.WriteLine($"Invalid argument: {currentOptionName}");
@@ -155,7 +154,6 @@ internal class ArgumentParser {
                     }
                 } else if(currentOption is OptionArg) {                    
                     if(((OptionArg)currentOption).RequiredVArgs){
-                        Console.WriteLine($"{currentOptionName} is VArgs");
                         isArgumentValues = true;
                     } else {
                         isArgumentValue = true;
@@ -164,7 +162,7 @@ internal class ArgumentParser {
                 continue;
             }
             if(isArgumentValue) {
-                Console.WriteLine(arg);
+
                 pa.Args[currentOption.ShortName] = arg;
                 if(currentOption.HasLongName) {
                     pa.Args[currentOption.LongName] = arg;
@@ -180,13 +178,23 @@ internal class ArgumentParser {
         // 引数ありのオプション引数を受け取ったにも関わらず、
         // その引数をパースし切れていないケースを想定
         if(isArgumentValue) {
+            Console.WriteLine($"{currentOptionName} requires argument");
             return null;
         }
+        // 最後が可変長引数だった場合に一時変数vargsをparsedArgumentに格納する
         if(isArgumentValues) {
+            if(vargs.Count == 0) {
+                Console.WriteLine($"{currentOptionName} requires arguments");
+                Environment.Exit(0);
+            }
             pa.VArgs[currentOptionName] = vargs;
             isArgumentValues = false;
-            foreach(var va in vargs) {
-                Console.WriteLine(va);
+        }
+
+        foreach(var option in this.GetRequiredOptions()) {
+            if(!pa.Args.ContainsKey(option.ShortName)) {
+                Console.WriteLine($"{option.ShortName} is required arguments");
+                return null;
             }
         }
         return pa;
