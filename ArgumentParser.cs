@@ -190,13 +190,6 @@ internal class ArgumentParser {
             pa.VArgs[currentOptionName] = vargs;
             isArgumentValues = false;
         }
-
-        foreach(var option in this.GetRequiredOptions()) {
-            if(!pa.Args.ContainsKey(option.ShortName)) {
-                Console.WriteLine($"{option.ShortName} is required arguments");
-                return null;
-            }
-        }
         return pa;
     }
 }

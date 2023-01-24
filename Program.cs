@@ -5,8 +5,7 @@ using System.Collections.Generic;
 class Program {
     static void Main(string[] args) {
         SimpleDllLoader option = InitArgs(args);
-        Assembly asm = Assembly.LoadFile(option.path);
-        Type type = GetTypeFromAssembly(asm, option.@namespace, option.className);
+        Type type = GetTypeFromAssembly(option.path, option.@namespace, option.className);
         var constructorInfo= GetConstructorInfo(type, option.cctorTypes);
         object[] param = MapParams(option.cctorArgs, constructorInfo);
         var instance = constructorInfo.Invoke(param);
@@ -92,7 +91,8 @@ class Program {
         );        
         return instance;
     }
-    private static Type GetTypeFromAssembly(Assembly asm, string ns, string cls) {
+    private static Type GetTypeFromAssembly(string path, string ns, string cls) {
+        Assembly asm = Assembly.LoadFile(path);
         string fqdn = ns == null ? cls : ns + "." + cls;
         Type type = asm.GetType(fqdn);
         if(type == null) {
